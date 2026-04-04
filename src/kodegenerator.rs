@@ -267,6 +267,7 @@ impl Kodegenerator {
         &self,
         saetninger: &[Saetning],
         kilde_sti: &str,
+        behold_c: bool,
     ) -> Result<String, String> {
         // Bestem filnavne: hej.ms → hej.c + hej.exe
         let stamme = Path::new(kilde_sti)
@@ -304,8 +305,12 @@ impl Kodegenerator {
             return Err(format!("gcc fejlede:\n{}", fejl));
         }
 
-        // Ryd den midlertidige C-fil op
-        let _ = std::fs::remove_file(&c_fil);
+        // Ryd den midlertidige C-fil op (medmindre --behold-c er angivet)
+        if !behold_c {
+            let _ = std::fs::remove_file(&c_fil);
+        } else {
+            println!("[transpiler] Beholder '{}'", c_fil);
+        }
 
         Ok(exe_fil)
     }

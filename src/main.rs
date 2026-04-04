@@ -11,17 +11,17 @@ use std::process;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    // Fortolk argumenter: mit-sprog <fil.ms> [--kompiler]
-    let (filnavn, kompiler_tilstand) = match args.as_slice() {
-        [_, fil] => (fil.clone(), false),
-        [_, fil, flag] if flag == "--kompiler" => (fil.clone(), true),
-        _ => {
-            eprintln!("Brug: mit-sprog <fil.ms> [--kompiler]");
-            eprintln!("  Uden --kompiler: kører programmet direkte");
-            eprintln!("  Med --kompiler:  oversætter til C og bygger en .exe via gcc");
-            process::exit(1);
-        }
-    };
+    // Fortolk argumenter
+    let flags: Vec<&str> = args[1..].iter().map(|s| s.as_str()).collect();
+    let filnavn = flags.iter().find(|f| !f.starts_with("--")).copied().unwrap_or_else(|| {
+        eprintln!("Brug: mit-sprog <fil.ms> [--kompiler] [--behold-c]");
+        eprintln!("  Uden --kompiler:  kører programmet direkte");
+        eprintln!("  Med --kompiler:   oversætter til C og bygger en .exe via gcc");
+        eprintln!("  Med --behold-c:   beholder den genererede .c-fil (kræver --kompiler)");
+        process::exit(1);
+    }).to_string();
+    let kompiler_tilstand = flags.contains(&"--kompiler");
+    let behold_c = flags.contains(&"--behold-c");
 
     let kildekode = match fs::read_to_string(&filnavn) {
         Ok(indhold) => indhold,
@@ -54,7 +54,7 @@ fn main() {
     if kompiler_tilstand {
         // Fase 3b: Transpiler til C → gcc → .exe
         let generator = kodegenerator::Kodegenerator::ny();
-        match generator.kompiler(&saetninger, &filnavn) {
+        match generator.kompiler(&saetninger, &filnavn, behold_c) {
             Ok(exe) => println!("[kompiler] Færdig: '{}'", exe),
             Err(e) => {
                 eprintln!("Kompileringsfejl: {}", e);
