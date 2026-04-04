@@ -1,6 +1,7 @@
 use crate::ast::{Operator, Saetning, Type, Udtryk};
 use crate::lexer::Token;
 
+
 /// Parser — omdanner en liste af tokens til et AST (abstrakt syntakstræ)
 pub struct Parser {
     tokens: Vec<Token>,
@@ -115,6 +116,57 @@ impl Parser {
                 self.forvent(&Token::Slut)?;
                 Ok(Saetning::Mens { betingelse, krop })
             }
+            Token::Funktion => {
+                self.spis(); // spis 'funktion'
+                let navn = self.forvent_ident()?;
+                self.forvent(&Token::VenstreParentes)?;
+                let mut parametre = Vec::new();
+                if self.kig() != &Token::HøjreParentes {
+                    let p_navn = self.forvent_ident()?;
+                    self.forvent(&Token::Som)?;
+                    let p_type = self.parse_type()?;
+                    parametre.push((p_navn, p_type));
+                    while self.kig() == &Token::Komma {
+                        self.spis();
+                        let p_navn = self.forvent_ident()?;
+                        self.forvent(&Token::Som)?;
+                        let p_type = self.parse_type()?;
+                        parametre.push((p_navn, p_type));
+                    }
+                }
+                self.forvent(&Token::HøjreParentes)?;
+                let returtype = if self.kig() == &Token::Giver {
+                    self.spis();
+                    Some(self.parse_type()?)
+                } else {
+                    None
+                };
+                if self.kig() == &Token::Newline { self.spis(); }
+                let krop = self.parse_blok()?;
+                self.forvent(&Token::Slut)?;
+                Ok(Saetning::FunktionDef { navn, parametre, returtype, krop })
+            }
+            Token::Returner => {
+                self.spis(); // spis 'returner'
+                let udtryk = if self.kig() != &Token::Newline && self.kig() != &Token::FilSlut {
+                    Some(self.parse_udtryk()?)
+                } else {
+                    None
+                };
+                Ok(Saetning::Returner(udtryk))
+            }
+            Token::Ident(_) => {
+                // Funktionskald som sætning: navn(arg1, arg2)
+                let navn = if let Token::Ident(n) = self.spis() { n } else { unreachable!() };
+                if self.kig() == &Token::VenstreParentes {
+                    self.spis(); // spis '('
+                    let argumenter = self.parse_argumentliste()?;
+                    self.forvent(&Token::HøjreParentes)?;
+                    Ok(Saetning::Udtryksaetning(Udtryk::FunktionsKald { navn, argumenter }))
+                } else {
+                    Err(format!("Ukendt sætning '{}' — mangler du 'skriv', 'sæt' eller et funktionskald?", navn))
+                }
+            }
             Token::FilSlut => Err("Uventet slutning af fil".to_string()),
             t => Err(format!("Uventet token: {:?}", t)),
         }
@@ -138,6 +190,20 @@ impl Parser {
             }
         }
         Ok(saetninger)
+    }
+
+    /// Parser liste af funktionsargumenter (uden omsluttende parenteser)
+    fn parse_argumentliste(&mut self) -> Result<Vec<Udtryk>, String> {
+        let mut argumenter = Vec::new();
+        if self.kig() == &Token::HøjreParentes {
+            return Ok(argumenter);
+        }
+        argumenter.push(self.parse_udtryk()?);
+        while self.kig() == &Token::Komma {
+            self.spis();
+            argumenter.push(self.parse_udtryk()?);
+        }
+        Ok(argumenter)
     }
 
     /// Parser ét udtryk — sammenligning har lavere prioritet end + og -
@@ -197,7 +263,17 @@ impl Parser {
             Token::TalLiteral(n)     => Ok(Udtryk::Tal(n)),
             Token::Sand              => Ok(Udtryk::BoolLiteral(true)),
             Token::Falsk             => Ok(Udtryk::BoolLiteral(false)),
-            Token::Ident(navn)       => Ok(Udtryk::Variable(navn)),
+            Token::Ident(navn)       => {
+                // Tjek om det er et funktionskald i udtryk-kontekst: navn(args)
+                if self.kig() == &Token::VenstreParentes {
+                    self.spis(); // spis '('
+                    let argumenter = self.parse_argumentliste()?;
+                    self.forvent(&Token::HøjreParentes)?;
+                    Ok(Udtryk::FunktionsKald { navn, argumenter })
+                } else {
+                    Ok(Udtryk::Variable(navn))
+                }
+            }
             t => Err(format!("Forventede en værdi, men fandt {:?}", t)),
         }
     }

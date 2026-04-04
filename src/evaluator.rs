@@ -33,17 +33,31 @@ impl Værdi {
     }
 }
 
+/// En funktion registreret i sproget
+#[derive(Clone)]
+struct FunktionInfo {
+    parametre: Vec<(String, Type)>,
+    returtype: Option<Type>,
+    krop: Vec<Saetning>,
+}
+
 /// Evaluator — udfører et program og forklarer hvert trin
 pub struct Evaluator {
     hukommelse: HashMap<String, Værdi>,
+    functioner: HashMap<String, FunktionInfo>,
+    return_signal: Option<Værdi>,
 }
 
 impl Evaluator {
     pub fn ny() -> Self {
-        Evaluator { hukommelse: HashMap::new() }
+        Evaluator {
+            hukommelse: HashMap::new(),
+            functioner: HashMap::new(),
+            return_signal: None,
+        }
     }
 
-    fn evaluer_udtryk(&self, udtryk: &Udtryk) -> Result<Værdi, String> {
+    fn evaluer_udtryk(&mut self, udtryk: &Udtryk) -> Result<Værdi, String> {
         match udtryk {
             Udtryk::Bogstav(s)      => Ok(Værdi::Streng(s.clone())),
             Udtryk::Tal(n)          => Ok(Værdi::Nummer(*n)),
@@ -81,12 +95,94 @@ impl Evaluator {
                     )),
                 }
             }
+            Udtryk::FunktionsKald { navn, argumenter } => {
+                // Evaluér argumenter, opslå funktion og kald den
+                let mut arg_værdier = Vec::new();
+                for arg in argumenter {
+                    arg_værdier.push(self.evaluer_udtryk(arg)?);
+                }
+                let info = self.functioner.get(navn).cloned().ok_or_else(|| {
+                    format!("Ukendt funktion '{}' — er den erklæret med 'funktion'?", navn)
+                })?;
+                let kald_navn = navn.clone();
+                self.kald_funktion(info, arg_værdier, &kald_navn)
+            }
         }
     }
 
+    /// Kalder en funktion med en ny scope og håndterer returværdi
+    fn kald_funktion(&mut self, info: FunktionInfo, argumenter: Vec<Værdi>, navn: &str) -> Result<Værdi, String> {
+        if argumenter.len() != info.parametre.len() {
+            return Err(format!(
+                "Funktion '{}' forventer {} {}, men fik {}",
+                navn, info.parametre.len(),
+                if info.parametre.len() == 1 { "argument" } else { "argumenter" },
+                argumenter.len()
+            ));
+        }
+        // Typetjek og byg trace-streng
+        let mut param_trace = Vec::new();
+        for ((p_navn, p_type), arg) in info.parametre.iter().zip(&argumenter) {
+            let ok = matches!(
+                (p_type, arg),
+                (Type::Nummer,    Værdi::Nummer(_))    |
+                (Type::Streng,    Værdi::Streng(_))    |
+                (Type::SandFalsk, Værdi::SandFalsk(_))
+            );
+            if !ok {
+                return Err(format!(
+                    "Typefejl i kald af '{}': parameter '{}' er {}, men fik {}",
+                    navn, p_navn, type_navn_fra_type(p_type), arg.type_navn()
+                ));
+            }
+            param_trace.push(format!("{} = {}", p_navn, arg.vis()));
+        }
+        println!("[trace] Kalder funktion '{}' ({})", navn, param_trace.join(", "));
+
+        // Gem ydre scope og nulstil returnsignal
+        let gammelt_hukommelse = std::mem::replace(&mut self.hukommelse, HashMap::new());
+        let gammelt_return = self.return_signal.take();
+
+        // Bind parametre til lokal scope
+        for ((p_navn, _), arg) in info.parametre.iter().zip(argumenter) {
+            self.hukommelse.insert(p_navn.clone(), arg);
+        }
+
+        // Udfør funktionskroppen
+        self.kør(&info.krop)?;
+
+        // Hent returværdi og gendan ydre scope
+        let retur = self.return_signal.take();
+        self.hukommelse = gammelt_hukommelse;
+        self.return_signal = gammelt_return;
+
+        let v = match retur {
+            Some(v) => {
+                println!("[trace] Funktion '{}' returnerede: {}", navn, v.vis());
+                v
+            }
+            None => Værdi::SandFalsk(false), // void-funktion giver dummy-værdi
+        };
+        Ok(v)
+    }
+
     pub fn kør(&mut self, saetninger: &[Saetning]) -> Result<(), String> {
+        // Første pas: registrer alle funktionsdefinitioner i denne blok
+        for s in saetninger {
+            if let Saetning::FunktionDef { navn, parametre, returtype, krop } = s {
+                self.functioner.insert(navn.clone(), FunktionInfo {
+                    parametre: parametre.clone(),
+                    returtype: returtype.clone(),
+                    krop: krop.clone(),
+                });
+            }
+        }
+        // Andet pas: udfør de øvrige sætninger
         for saetning in saetninger {
-            self.udfør(saetning)?;
+            if self.return_signal.is_some() { break; }
+            if !matches!(saetning, Saetning::FunktionDef { .. }) {
+                self.udfør(saetning)?;
+            }
         }
         Ok(())
     }
@@ -194,12 +290,14 @@ impl Evaluator {
                 for i in 1..=n {
                     println!("[trace] Gentagelse {}/{}", i, n);
                     self.kør(krop)?;
+                    if self.return_signal.is_some() { break; }
                 }
                 Ok(())
             }
             Saetning::Mens { betingelse, krop } => {
                 let mut iteration = 0u64;
                 loop {
+                    if self.return_signal.is_some() { break; }
                     let v = self.evaluer_udtryk(betingelse)?;
                     match v {
                         Værdi::SandFalsk(true) => {
@@ -219,6 +317,24 @@ impl Evaluator {
                 }
                 Ok(())
             }
+            Saetning::FunktionDef { .. } => {
+                // Allerede registreret i kør() — intet at gøre her
+                Ok(())
+            }
+            Saetning::Returner(udtryk) => {
+                let v = match udtryk {
+                    Some(u) => self.evaluer_udtryk(u)?,
+                    None    => Værdi::SandFalsk(false),
+                };
+                println!("[trace] Returnerer: {}", v.vis());
+                self.return_signal = Some(v);
+                Ok(())
+            }
+            Saetning::Udtryksaetning(udtryk) => {
+                // Udfør udtryk (typisk et funktionskald) og kassér værdien
+                self.evaluer_udtryk(udtryk)?;
+                Ok(())
+            }
         }
     }
 }
@@ -230,3 +346,4 @@ fn type_navn_fra_type(t: &Type) -> &'static str {
         Type::SandFalsk => "sandFalsk",
     }
 }
+

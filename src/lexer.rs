@@ -15,6 +15,13 @@ pub enum Token {
     Gentag,
     Gange,
     Mens,
+    Funktion,
+    Giver,
+    Returner,
+    // Tegn (parentes, komma)
+    VenstreParentes, // (
+    HøjreParentes,   // )
+    Komma,           // ,
     // Typenavn-tokens
     Nummer,
     Streng,
@@ -198,6 +205,18 @@ impl Lexer {
                         tokens.push(Token::Større);
                     }
                 }
+                Some('(') => {
+                    self.spis();
+                    tokens.push(Token::VenstreParentes);
+                }
+                Some(')') => {
+                    self.spis();
+                    tokens.push(Token::HøjreParentes);
+                }
+                Some(',') => {
+                    self.spis();
+                    tokens.push(Token::Komma);
+                }
                 Some('+') => {
                     self.spis();
                     tokens.push(Token::Plus);
@@ -230,6 +249,9 @@ impl Lexer {
                         "gentag"     => Token::Gentag,
                         "gange"      => Token::Gange,
                         "mens"       => Token::Mens,
+                        "funktion"   => Token::Funktion,
+                        "giver"      => Token::Giver,
+                        "returner"   => Token::Returner,
                         "nummer"     => Token::Nummer,
                         "streng"     => Token::Streng,
                         "sandFalsk"  => Token::SandFalsk,

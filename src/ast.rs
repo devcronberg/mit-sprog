@@ -36,6 +36,11 @@ pub enum Udtryk {
         operator: Operator,
         højre: Box<Udtryk>,
     },
+    /// Et funktionskald: hilsen("verden") eller summer(3, 4)
+    FunktionsKald {
+        navn: String,
+        argumenter: Vec<Udtryk>,
+    },
 }
 
 /// Sætninger (statements) — hvad der kan udføres
@@ -72,4 +77,15 @@ pub enum Saetning {
         betingelse: Udtryk,
         krop: Vec<Saetning>,
     },
+    /// funktion navn(param som type, ...) [giver type] ... slut
+    FunktionDef {
+        navn: String,
+        parametre: Vec<(String, Type)>,
+        returtype: Option<Type>,
+        krop: Vec<Saetning>,
+    },
+    /// returner [udtryk]
+    Returner(Option<Udtryk>),
+    /// Et udtryk brugt som sætning, f.eks. et funktionskald
+    Udtryksaetning(Udtryk),
 }
