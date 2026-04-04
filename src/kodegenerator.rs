@@ -269,14 +269,14 @@ impl Kodegenerator {
         kilde_sti: &str,
         behold_c: bool,
     ) -> Result<String, String> {
-        // Bestem filnavne: hej.ms → hej.c + hej.exe
+        // Bestem filnavne: kilde bruges til .c, output hedder altid mit-sprog.exe
         let stamme = Path::new(kilde_sti)
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("program");
 
         let c_fil = format!("{}.c", stamme);
-        let exe_fil = format!("{}.exe", stamme);
+        let exe_fil = "mit-sprog.exe".to_string();
 
         // Skriv C-koden til disk
         let c_kode = self.generer(saetninger);

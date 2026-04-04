@@ -13,11 +13,20 @@ fn main() {
 
     // Fortolk argumenter
     let flags: Vec<&str> = args[1..].iter().map(|s| s.as_str()).collect();
+
+    if flags.contains(&"--version") || flags.contains(&"-v") {
+        println!("mit-sprog v{}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
     let filnavn = flags.iter().find(|f| !f.starts_with("--")).copied().unwrap_or_else(|| {
+        eprintln!("mit-sprog v{} — et dansk programmeringssprog", env!("CARGO_PKG_VERSION"));
+        eprintln!();
         eprintln!("Brug: mit-sprog <fil.ms> [--kompiler] [--behold-c]");
-        eprintln!("  Uden --kompiler:  kører programmet direkte");
-        eprintln!("  Med --kompiler:   oversætter til C og bygger en .exe via gcc");
+        eprintln!("  Uden --kompiler:  kører programmet direkte (med [trace]-forklaringer)");
+        eprintln!("  Med --kompiler:   oversætter til C og bygger mit-sprog.exe via gcc");
         eprintln!("  Med --behold-c:   beholder den genererede .c-fil (kræver --kompiler)");
+        eprintln!("  --version / -v:   vis versionsnummer");
         process::exit(1);
     }).to_string();
     let kompiler_tilstand = flags.contains(&"--kompiler");
