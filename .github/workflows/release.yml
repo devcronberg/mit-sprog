@@ -32,13 +32,12 @@ jobs:
       - name: Byg release-version
         run: cargo build --release --target x86_64-pc-windows-gnu
 
-      - name: Omdøb exe med versionsnummer
+      - name: Omdøb exe klar til upload
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}"
           Copy-Item `
             "target\x86_64-pc-windows-gnu\release\mit-sprog.exe" `
-            "mit-sprog-$version-windows.exe"
+            "mit-sprog.exe"
 
       - name: Opret GitHub Release og upload .exe
         uses: softprops/action-gh-release@v2
@@ -47,13 +46,11 @@ jobs:
           body: |
             ## Download
 
-            Hent `mit-sprog-${{ github.ref_name }}-windows.exe` herunder.
-
-            Ingen installation nødvendig — læg filen et sted i din PATH eller kald den direkte:
+            Hent `mit-sprog.exe` herunder og læg den et sted i din PATH:
 
             ```
-            mit-sprog-${{ github.ref_name }}-windows.exe mittprogram.ms
+            mit-sprog.exe mittprogram.ms
             ```
 
             Se [README](https://github.com/${{ github.repository }}/blob/main/README.md) for dokumentation.
-          files: mit-sprog-${{ github.ref_name }}-windows.exe
+          files: mit-sprog.exe

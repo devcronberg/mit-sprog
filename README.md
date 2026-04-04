@@ -8,9 +8,9 @@ Sproget er bevidst simpelt. Det handler ikke om at bygge apps. Det handler om at
 
 ## Hent og kør
 
-Download den seneste `mit-sprog.exe` fra [Releases](../../releases/latest).
+Download den seneste [`mit-sprog.exe`](https://github.com/devcronberg/mit-sprog/releases/latest/download/mit-sprog.exe) — eller gå til [Releases](https://github.com/devcronberg/mit-sprog/releases/latest).
 
-**Ingen installation nødvendig.** Filen afhænger kun af DLLer der allerede er en del af Windows 10/11. Kopier `.exe`-filen et sted på din maskine og kør den direkte fra Windows Terminal:
+**Ingen installation nødvendig.** Kopier `.exe`-filen et sted på din maskine og kør den direkte fra Windows Terminal:
 
 ### Fortolker-tilstand (standard)
 
@@ -148,10 +148,11 @@ Sproget er under aktiv udvikling. Planlagte funktioner i prioriteret rækkefølg
 | Tekstvariabler      | `erklær navn som streng = "Mia"`              | ✅ Implementeret |
 | Boolske værdier     | `erklær voksen som sandFalsk = sand`          | ✅ Implementeret |
 | Hukommelsesdump     | `vis hukommelse`                              | ✅ Implementeret |
-| Betingelser         | `hvis alder >= 18 { ... } ellers { ... }`     | Planlagt        |
-| Løkker              | `gentag 5 gange { ... }`                      | Planlagt        |
-| Regneoperationer    | `sæt sum = a + b`                             | Planlagt        |
-| Funktioner          | `funktion kvadrat(n: nummer): nummer { ... }` | Planlagt        |
+| Betingelser         | `hvis alder >= 18 så ... ellers ... slut`     | ✅ Implementeret |
+| Løkker              | `gentag 5 gange ... slut`                      | ✅ Implementeret |
+| While-løkke         | `mens x < 10 så ... slut`                     | ✅ Implementeret |
+| Regneoperationer    | `sæt sum = a + b`                             | ✅ Implementeret |
+| Funktioner          | `funktion f(n som nummer) giver nummer ... slut`| ✅ Implementeret |
 | Input fra brugeren  | `spørg "Hvad hedder du?"`                     | Planlagt        |
 
 ---
