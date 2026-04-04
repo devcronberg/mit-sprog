@@ -1,0 +1,14 @@
+/target
+
+# Byg-artefakter der ikke skal i repo
+*.exe
+*.pdb
+
+# Editor
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+desktop.ini
+

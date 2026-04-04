@@ -1,0 +1,59 @@
+name: Byg og udgiv mit-sprog
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  byg:
+    name: Byg Windows .exe
+    runs-on: windows-latest
+
+    steps:
+      - name: Hent kildekode
+        uses: actions/checkout@v4
+
+      - name: Installér Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+
+      - name: Installér MinGW (GNU-linker)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+          path-type: inherit
+
+      - name: Byg release-version
+        run: cargo build --release --target x86_64-pc-windows-gnu
+
+      - name: Omdøb exe med versionsnummer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}"
+          Copy-Item `
+            "target\x86_64-pc-windows-gnu\release\mit-sprog.exe" `
+            "mit-sprog-$version-windows.exe"
+
+      - name: Opret GitHub Release og upload .exe
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "mit-sprog ${{ github.ref_name }}"
+          body: |
+            ## Download
+
+            Hent `mit-sprog-${{ github.ref_name }}-windows.exe` herunder.
+
+            Ingen installation nødvendig — læg filen et sted i din PATH eller kald den direkte:
+
+            ```
+            mit-sprog-${{ github.ref_name }}-windows.exe mittprogram.ms
+            ```
+
+            Se [README](https://github.com/${{ github.repository }}/blob/main/README.md) for dokumentation.
+          files: mit-sprog-${{ github.ref_name }}-windows.exe
