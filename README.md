@@ -157,15 +157,19 @@ Sproget er under aktiv udvikling. Planlagte funktioner i prioriteret rækkefølg
 
 ---
 
-## Sådan virker fortolkeren — konceptuelt
+## Sådan virker mit-sprog — konceptuelt
 
-`mit-sprog` er en **fortolker** (interpreter), ikke en kompiler.
+`mit-sprog` kan arbejde på to måder: som **fortolker** (standard) eller som **transpiler** (`--kompiler`).
 
-En **kompiler** oversætter kode til maskinkode og gemmer resultatet som en ny fil — du kører oversættelsen og programmet i to separate skridt. En **fortolker** læser, forstår og udfører koden i ét hug — der produceres ingen ny fil.
+I **fortolker-tilstand** læser, forstår og udfører `mit-sprog` koden i ét hug — der produceres ingen ny fil, og du ser `[trace]`-output trin for trin.
 
-Når du skriver `mit-sprog.exe hej.ms` sker alt på én gang: filen åbnes, læses og køres direkte. Rust er kun brugt til at bygge selve fortolkeren — din `.ms`-kode kompileres aldrig til maskinkode.
+I **transpiler-tilstand** oversætter `mit-sprog` `.ms`-koden til C-kode og kalder `gcc` for at bygge en selvstændig `.exe` — to separate skridt, men automatiseret. Den færdige `.exe` kører uden `mit-sprog` overhovedet.
 
-Et program er bare tekst. For at fortolkeren kan *forstå* det, behandles teksten i tre trin:
+Begge tilstande bruger den samme pipeline (lexer → parser → AST). I fortolker-tilstand evalueres AST direkte; i transpiler-tilstand genereres C-kode fra AST i stedet.
+
+Når du kører `mit-sprog.exe hej.ms` (uden flag) sker alt på én gang: filen åbnes, læses og køres direkte. Rust er kun brugt til at bygge selve fortolkeren — din `.ms`-kode oversættes ikke til maskinkode.
+
+Et program er bare tekst. For at `mit-sprog` kan *forstå* det, behandles teksten i tre trin:
 
 ```
 Kildekode (.ms-fil)
@@ -181,13 +185,13 @@ Kildekode (.ms-fil)
   └───────────┘
         │  abstrakt syntakstræ: [Erklær { navn: "alder", type_: Nummer, startværdi: Some(Tal(16)) }]
         ▼
-  ┌───────────────┐
-  │ Evaluator     │  — "Udfør det! Husk variablerne!"
-  │ (+ hukommelse)│
-  └───────────────┘
-        │
-        ▼
-     Output + [trace]
+  ┌───────────────┐         ┌────────────────────┐
+  │ Evaluator     │  — eller — │ Kodegenerator (C)  │
+  │ (fortolker)   │         │ (transpiler)       │
+  └───────────────┘         └────────────────────┘
+        │                           │
+        ▼                           ▼
+  Output + [trace]           mit-sprog.exe (via gcc)
 ```
 
 ### Trin 1 — Lexer (tokenisering)
@@ -207,11 +211,11 @@ Parseren tager listen af tokens og bygger et *abstrakt syntakstræ* (AST). Træe
 
 En `skriv`-sætning forventer præcis ét udtryk efter sig. Hvis det mangler, stopper parseren med en fejl.
 
-### Trin 3 — Evaluator (udførelse)
+### Trin 3 — Evaluator eller Kodegenerator
 
-Evaluatoren gennemgår syntakstræet og *udfører* det. For hvert trin printer den hvad den er ved at gøre (`[trace]`), og derefter selve resultatet.
+I **fortolker-tilstand** gennemgår evaluatoren syntakstræet og *udfører* det. For hvert trin printer den hvad den er ved at gøre (`[trace]`), og derefter selve resultatet.
 
-Det er her programmet rent faktisk *kører*.
+I **transpiler-tilstand** gennemgår kodegeneratoren det samme syntakstræ og *oversætter* det til C-kode, som `gcc` derefter kompilerer til en selvstændig `.exe`.
 
 ---
 
