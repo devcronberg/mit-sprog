@@ -24,7 +24,7 @@ fn main() {
         eprintln!();
         eprintln!("Brug: mit-sprog <fil.ms> [--kompiler] [--behold-c]");
         eprintln!("  Uden --kompiler:  kører programmet direkte (med [trace]-forklaringer)");
-        eprintln!("  Med --kompiler:   oversætter til C og bygger mit-sprog.exe via gcc");
+        eprintln!("  Med --kompiler:   oversætter til C og bygger <fil>.exe via gcc");
         eprintln!("  Med --behold-c:   beholder den genererede .c-fil (kræver --kompiler)");
         eprintln!("  --version / -v:   vis versionsnummer");
         process::exit(1);

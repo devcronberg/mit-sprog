@@ -26,7 +26,7 @@ impl Kodegenerator {
         linjer.push("#include <stdio.h>".to_string());
         linjer.push("#include <string.h>".to_string());
         linjer.push("#include <stdlib.h>".to_string());
-        linjer.push("#include <windows.h>".to_string());
+        // #include <windows.h>".to_string(); // Kun på Windows
         // Hjælpefunktion til strengsammenkædning
         linjer.push("static char* _ms_strjoin(const char* a, const char* b) {".to_string());
         linjer.push("    size_t la = strlen(a), lb = strlen(b);".to_string());
@@ -43,7 +43,7 @@ impl Kodegenerator {
 
         linjer.push("int main(void) {".to_string());
         // Sæt konsollen til UTF-8 så danske bogstaver vises korrekt
-        linjer.push("    SetConsoleOutputCP(65001);".to_string());
+        // linjer.push("    SetConsoleOutputCP(65001);".to_string()); // Kun på Windows
 
         let mut type_map: HashMap<String, Type> = HashMap::new();
         for s in saetninger {
@@ -269,14 +269,14 @@ impl Kodegenerator {
         kilde_sti: &str,
         behold_c: bool,
     ) -> Result<String, String> {
-        // Bestem filnavne: kilde bruges til .c, output hedder altid mit-sprog.exe
+        // Bestem filnavne: kilde bruges til .c, output hedder <stamme>.exe
         let stamme = Path::new(kilde_sti)
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("program");
 
         let c_fil = format!("{}.c", stamme);
-        let exe_fil = "mit-sprog.exe".to_string();
+        let exe_fil = format!("{}.exe", stamme);
 
         // Skriv C-koden til disk
         let c_kode = self.generer(saetninger);
