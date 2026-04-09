@@ -45,6 +45,13 @@ Den færdige `mittprogram.exe` kører uden `mit-sprog`, uden MinGW og uden nogen
 scoop install mingw
 ```
 
+Hvis du er admin kan Scoop installeres som
+
+```
+irm get.scoop.sh -outfile install.ps1
+.\install.ps1 -RunAsAdmin
+```
+
 ### Forskellen på de to tilstande
 
 |                   | Fortolker                          | Transpiler                          |
