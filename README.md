@@ -192,12 +192,12 @@ Kildekode (.ms-fil)
   └───────────┘
         │  abstrakt syntakstræ: [Erklær { navn: "alder", type_: Nummer, startværdi: Some(Tal(16)) }]
         ▼
-  ┌───────────────┐         ┌────────────────────┐
+  ┌───────────────┐            ┌────────────────────┐
   │ Evaluator     │  — eller — │ Kodegenerator (C)  │
-  │ (fortolker)   │         │ (transpiler)       │
-  └───────────────┘         └────────────────────┘
-        │                           │
-        ▼                           ▼
+  │ (fortolker)   │            │ (transpiler)       │
+  └───────────────┘            └────────────────────┘
+        │                              │
+        ▼                              ▼
   Output + [trace]           mit-sprog.exe (via gcc)
 ```
 
